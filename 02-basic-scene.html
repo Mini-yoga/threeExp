@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Example 02.01 - Basic Scene</title>
+	<script type="text/javascript" src="libs/three.js"></script>
+	<script type="text/javascript" src="libs/stats.js"></script><!--检测动画运行帧频-->
+	<script type="text/javascript" src="libs/dat.gui.js"></script><!--添加用户界面调节参数-->
+	<script type="text/javascript" src="libs/jquery-1.9.0.js"></script>
+	<style>
+		body {
+			/* set margin to 0 and overflow to hidden, to go fullscreen */
+			margin: 0;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+	<div id="Stats-output"></div>
+	<div id="WebGL-output"></div>
+	<script type="text/javascript">
+	function init(){
+		
+		var stats = new initStats()
+		var scene = new THREE.Scene()
+		var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+		var renderer = new THREE.WebGLRenderer()
+		var axes = new THREE.AxisHelper(60)
+		scene.add(axes)
+		
+
+		camera.position.x = -60
+		camera.position.y = 60
+		camera.position.z = 10 
+		camera.lookAt(scene.position)//需要聚焦到场景位置
+		scene.add(camera)
+
+		renderer.setClearColorHex(0xf2eada)
+		renderer.setSize(window.innerWidth,window.innerHeight)
+		renderer.shadowMapEnabled = true//允许投影
+		                                
+		var planeGeometry = new THREE.PlaneGeometry(60,40,1,1)
+		var planeMaterial = new THREE.MeshLambertMaterial({color: 0xfEffff});                                
+		var plane = new THREE.Mesh(planeGeometry,planeMaterial)    
+		plane.receiveShadow = true
+		
+		plane.rotation.x = -0.5 * Math.PI//斜放置平面, 旋转属性要指定rotation.x，绕x轴转
+		plane.position.x = 0
+		plane.position.y = 0
+		plane.position.z = 0
+		scene.add(plane)
+
+		var ambientLight = new THREE.AmbientLight(0x0c0c0c);// 环境光
+		scene.add(ambientLight);
+
+		var spotLight = new THREE.SpotLight(0xffffff);//聚光灯
+		spotLight.position.set(-40, 60, -10);
+		spotLight.castShadow = true;
+		scene.add(spotLight);
+
+		var controls =  new function(){
+			this.rotationSpeed = 0.01
+			this.numberOfObjects = scene.children.length;//获取场景内的子节点个数
+			
+			this.addCube =  function(){//this指controls
+			    var cubeSize = Math.random() * 3
+				var cubeGeometry = new THREE.CubeGeometry(cubeSize,cubeSize,cubeSize)
+				var cubeMateriral = new THREE.MeshLambertMaterial({color:Math.random() * 0xf0ffff})
+				var cube = new THREE.Mesh(cubeGeometry,cubeMateriral)
+				
+				cube.name = 'cube_'+scene.children.length
+				cube.castShadow = true
+				cube.position.x = -30 + Math.random() * planeGeometry.parameters.width
+				cube.position.y = Math.random() * 5
+				cube.position.z = -20 + Math.random() * planeGeometry.parameters.height
+
+				scene.add(cube)
+				this.numberOfObjects = scene.children.length
+			} 
+			this.removeCube =  function(){
+				var lastChild = scene.children[scene.children.length-1]
+				if(lastChild instanceof THREE.Mesh){
+					scene.remove(lastChild)
+					this.numberOfObjects = scene.children.length
+				}
+			} 
+			this.outputObjects=  function(){
+				console.log(scene.children)
+			} 			                                     
+		}
+
+
+
+		
+		function initStats() {
+			var stats = new Stats()
+			stats.setMode(0)
+			stats.domElement.style.position = 'absolute'
+			stats.domElement.style.top = '0xp'
+			stats.domElement.style.left = '0xp'
+			return stats
+		}
+
+		function initRender(){
+			stats.update()
+
+			scene.traverse(function (e){  //函数会在场景的每一个子对象上调用一次
+			 if(e instanceof THREE.Mesh && e != plane)                            
+			 	e.rotation.x += controls.rotationSpeed
+			 	e.rotation.y += controls.rotationSpeed
+			 	e.rotation.z += controls.rotationSpeed
+			})
+			
+			
+			scene.traverse(function (e) {
+				if (e instanceof THREE.Mesh && e != plane) {
+
+					e.rotation.x += controls.rotationSpeed;
+					e.rotation.y += controls.rotationSpeed;
+					e.rotation.z += controls.rotationSpeed;
+				}
+			});
+
+			
+			
+			requestAnimationFrame(initRender)
+			renderer.render(scene,camera)
+		}                     
+
+		
+	    var guis = new dat.GUI()
+		guis.add(controls,'rotationSpeed',0,0.5)// control是个方法，且其中的rotationSpeed等名如果要新建一个实例不能写入function中
+		guis.add(controls, 'addCube')
+		guis.add(controls, 'removeCube')
+		guis.add(controls, 'outputObjects')
+		guis.add(controls, 'numberOfObjects').listen()//
+		renderer.render(scene,camera)    
+		initRender()
+		$("#WebGL-output").append(renderer.domElement)
+		$("#Stats-output").append(stats.domElement)
+	}
+	window.onload = init
+	</script>
+</body>
+</html>

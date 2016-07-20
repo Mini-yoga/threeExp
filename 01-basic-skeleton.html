@@ -4,8 +4,8 @@
 <head>
 	<title>Example 01.01 - Basic skeleton</title>
 	<script type="text/javascript" src="libs/three.js"></script>
-	<script type="text/javascript" src="libs/stats.js"></script>
-	<script type="text/javascript" src="libs/dat.gui.js"></script>
+	<script type="text/javascript" src="libs/stats.js"></script><!--检测动画运行帧频-->
+	<script type="text/javascript" src="libs/dat.gui.js"></script><!--添加用户界面调节参数-->
 	<script type="text/javascript" src="libs/jquery-1.9.0.js"></script>
 	<style>
 		body {
@@ -14,7 +14,7 @@
 		}
 
 	</style>
-</head>	
+</head>
 <body>
 	<div id="Stats-output"></div>
 	<div id="WebGL-output"></div>
@@ -22,19 +22,19 @@
 	<script type="text/javascript">
 
 	function init(){
-		//var stats = initStats();
+		var stats = initStats();
 
 		var scene = new THREE.Scene();//场景，保存并跟踪渲染的物体
-		scene.fog = new THREE.Fog(0xffffff,0,015,100);
+		scene.fog = new THREE.Fog(0xffffff,0.015,100);
 
 		var camera = new THREE.PerspectiveCamera(45,window.innerWidth / window.innerHeight,0.1,1000);//定义了渲染好的scene看到什么
 
 		var renderer = new THREE.WebGLRenderer();//负责计算指定相机角度下浏览器中scene的样子
 		renderer.setClearColorHex(0xEEE3EE,1.0);//背景色
 		renderer.setSize(window.innerWidth,window.innerHeight);
-		//renerer.shadowMapEnabled = true;
+		renderer.shadowMapEnabled = true;// 允许阴影投射
 
-		var axes = new THREE.AxisHelper(20);
+		var axes = new THREE.AxisHelper(30);
 		scene.add(axes);
 
 		var planeGeomatry = new THREE.PlaneGeometry(60,40,1,1);//定义平面尺寸
@@ -53,7 +53,7 @@
 
         //方块
         var cubeGeometry = new THREE.CubeGeometry(4,4,4);
-        var cubeMaterial = new THREE.MeshLambertMaterial({color:0xff0000,wireframe:true});
+        var cubeMaterial = new THREE.MeshLambertMaterial({color:0xff0000,wireframe:false});
         var cube = new THREE.Mesh(cubeGeometry,cubeMaterial);
 		cube.castShadow = true;//投影阴影
 
@@ -66,7 +66,7 @@
 
         //球体
         var sphereGeometry = new THREE.SphereGeometry(4,20,20);
-        var sphereMaterial = new THREE.MeshLambertMaterial({color:0x7777ff,wireframe:true});
+        var sphereMaterial = new THREE.MeshLambertMaterial({color:0x7f77ff,wireframe:false});
         var sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
 		sphere.castShadow = true;
 
@@ -87,22 +87,52 @@
 		scene.add(sportLight);
 		        
         $("#WebGL-output").append(renderer.domElement);
-        renderer.render(scene,camera);
 
-        // document.getElementById("WebGL-output").appendChild(renderer.domElement);
+		var step = 0;
+		//dat.GUI库
+		var controls = new function(){
+			this.rotationSpeed = 0.02;
+			this.bouncingSpeed = 0.03;
+		}
 
-        // function initStats(){
-        // 	var stats = new Stats();
-        // 	stats.setMode(0);
+		var gui = new dat.GUI();
+		gui.add(controls,'rotationSpeed',0,0.5);//后两个参数为取值范围
+		gui.add(controls,'bouncingSpeed',0,0.5);
+		
+		renderScene();
+        //使用内调实现动画
+        function renderScene(){
+        	stats.update();
 
-        // 	stats.domElement.style.position = 'absolute';
-        // 	stats.domElement.style.left = '0px';
-        // 	stats.domElement.style.top = '0px';
+			cube.rotation.x += controls.rotationSpeed;
+			cube.rotation.y += controls.rotationSpeed;
+			cube.rotation.z += controls.rotationSpeed;
+			
+			step += controls.bouncingSpeed;//球弹跳速度
+			sphere.position.x = 20 + ( 10 * (Math.cos(step)));
+			sphere.position.y = 2 + ( 10 * Math.abs(Math.sin(step)));
 
-        // 	document.getElementById("Stats-output").appendChild(stats.domElement);
-        // 	return stats;
+        	requestAnimationFrame(renderScene);
+        	renderer.render(scene,camera);
+        }
 
-        // }                    	     
+        // //显示状态
+        function initStats(){
+        	var stats = new Stats();
+        	stats.setMode(0);//0监测FPS,1监测渲染时间
+
+        	stats.domElement.style.position = 'absolute';
+        	stats.domElement.style.left = '0px';
+        	stats.domElement.style.top = '0px';
+
+        	$("#Stats-output").append(stats.domElement);
+        	return stats;
+
+         }     
+
+
+
+	             	     
 	}
 
 window.onload = init
